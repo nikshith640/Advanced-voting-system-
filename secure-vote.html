@@ -30,54 +30,73 @@ video{width:100%;border-radius:12px;background:#000;aspect-ratio:4/3;object-fit:
 code{font-size:.7rem;word-break:break-all;color:var(--mu)}
 .hide{display:none}.note{font-size:.78rem;color:var(--mu)}
 </style></head><body>
-<header><h1>🗳️ Secure<span>Vote</span></h1><p class="s">Face + fingerprint verified, tamper-evident e-voting</p></header>
-<nav><button class="on" data-t="reg">Register</button><button data-t="vote">Vote</button><button data-t="audit">Results</button></nav>
+<header><h1>🗳️ Secure<span>Vote</span></h1><p class="s">PIN + live face check, tamper-evident e-voting</p></header>
+<nav><button class="on" data-t="reg">Register</button><button data-t="vote">Vote</button><button data-t="audit">Results</button><button data-t="admin">Admin</button></nav>
 <main>
 
 <section id="reg" class="card">
  <b>Voter registration</b>
  <label>Full name</label><input id="rn" autocomplete="off">
  <label>Voter ID</label><input id="ri" autocomplete="off">
+ <label>Create a secret PIN (4–6 digits)</label><input id="rpin" type="password" inputmode="numeric" maxlength="6">
  <video id="rv" playsinline muted class="hide"></video>
- <button class="btn g" id="rcam">1. Capture face</button>
- <button class="btn g" id="rfp">2. Register fingerprint</button>
+ <button class="btn g" id="rcam">Capture face</button>
+ 
  <button class="btn" id="rsave">Complete registration</button>
- <div class="msg" id="rm">Fill details, then capture your face and fingerprint.</div>
+ <div class="msg" id="rm">Fill in your details, then capture your face.</div>
 </section>
 
 <section id="vote" class="hide">
  <div class="card">
-  <div class="steps"><i id="p1" class="c"></i><i id="p2"></i><i id="p3"></i></div>
+  <div class="steps"><i id="p1" class="c"></i><i id="p2"></i></div>
   <div id="v1"><b>Step 1 · Identify</b>
    <label>Voter ID</label><input id="vi" autocomplete="off">
+   <label>Secret PIN</label><input id="vpin" type="password" inputmode="numeric" maxlength="6">
    <button class="btn" id="vgo">Continue</button></div>
   <div id="v2" class="hide"><b>Step 2 · Face check</b>
    <video id="vv" playsinline muted></video>
-   <button class="btn" id="vface">Verify face</button></div>
-  <div id="v3" class="hide"><b>Step 3 · Fingerprint</b>
-   <p class="note">Your phone will ask for your fingerprint.</p>
-   <button class="btn" id="vfp">Scan fingerprint</button></div>
-  <div id="v4" class="hide"><b>Step 4 · Choose candidate</b><div id="cl"></div>
+   <button class="btn" id="vface">Start live face check</button></div>
+  <div id="v4" class="hide"><b>Step 3 · Choose candidate</b><div id="cl"></div>
    <button class="btn" id="cast" disabled>Cast vote</button></div>
   <div class="msg" id="vm">Enter your Voter ID.</div>
  </div>
 </section>
 
+<section id="admin" class="hide">
+ <div class="card"><b>Election officer panel</b>
+  <div id="alog"><label id="apl">Enter admin PIN</label><input id="apin" type="password" inputmode="numeric"><button class="btn" id="ago">Unlock</button></div>
+  <div id="apanel" class="hide">
+   <label>Candidate name</label><input id="cn" autocomplete="off">
+   <label>Party / symbol</label><input id="cp" autocomplete="off">
+   <button class="btn" id="cadd">Add candidate</button>
+   <div id="clist"></div>
+   <button class="btn g" id="vtog">Open voting</button>
+   <p><b>Voters</b></p><div id="vlist"></div>
+   <p><b>Security log</b></p><div id="slog"></div>
+  </div>
+  <div class="msg" id="am">Candidates can be added or removed only before the first vote is cast.</div>
+ </div>
+</section>
 <section id="audit" class="hide">
  <div class="card"><b>Live tally</b><div id="tally"></div><p class="note" id="tot"></p></div>
  <div class="card"><b>Ledger integrity</b><div class="msg" id="chain"></div><div id="blocks"></div>
   <button class="btn g" id="reset">Reset demo data</button></div>
 </section>
 
-<p class="note">⚠️ Prototype: face matching is a lightweight on-device comparison. Fingerprint uses WebAuthn (data never leaves the phone's secure hardware). Needs HTTPS and a device with fingerprint set up. For real elections add server-side checks, liveness detection and certified biometric SDKs.</p>
+<p class="note">⚠️ Prototype: face matching is a lightweight on-device comparison without liveness detection. For real elections use certified biometric services and a secure backend.</p>
 </main>
 
 <script>
 const $=id=>document.getElementById(id);
-const CANDS=[{n:"Aarav Sharma",p:"Unity Party",c:"#2f5bea"},{n:"Meera Iyer",p:"Progress Alliance",c:"#12a150"},{n:"Rohan Das",p:"People's Front",c:"#d97706"},{n:"NOTA",p:"None of the above",c:"#667085"}];
+const COLORS=["#2f5bea","#12a150","#d97706","#9333ea","#0891b2","#dc2626"];
 let mem={voters:{},voted:[],ledger:[]};
 const store={load(){try{const r=localStorage.getItem("securevote");if(r)mem=JSON.parse(r)}catch(e){}},save(){try{localStorage.setItem("securevote",JSON.stringify(mem))}catch(e){}}};
 store.load();
+if(!mem.cands){mem.cands=[];mem.nid=1;mem.ledger=[];mem.voted=[]}
+if(!mem.v2){mem.voters={};mem.voted=[];mem.ledger=[];mem.log=[];mem.open=false;mem.v2=1}
+const cands=()=>mem.cands;
+const esc=t=>String(t).replace(/[&<>"']/g,c=>"&#"+c.charCodeAt(0)+";");
+const logE=t=>{mem.log.push({t:Date.now(),m:t});mem.log=mem.log.slice(-60);store.save()};
 const msg=(el,t,k)=>{el.textContent=t;el.className="msg "+(k||"")};
 const sha=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,"0")).join("");
 const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
@@ -86,7 +105,7 @@ const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 /* tabs */
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
- ["reg","vote","audit"].forEach(t=>$(t).classList.toggle("hide",t!==b.dataset.t));
+ ["reg","vote","audit","admin"].forEach(t=>$(t).classList.toggle("hide",t!==b.dataset.t));
  if(b.dataset.t==="audit")renderAudit(); stopCam();
 });
 
@@ -112,22 +131,8 @@ async function faceVec(v){
 }
 const cos=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
 
-/* fingerprint (WebAuthn) */
-const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
-async function enrollFP(id,name){
- const c=await navigator.credentials.create({publicKey:{challenge:rnd(32),rp:{name:"SecureVote"},
-  user:{id:new TextEncoder().encode(id),name:id,displayName:name},
-  pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
-  authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required"},timeout:60000}});
- return b64(c.rawId);
-}
-async function checkFP(credId){
- await navigator.credentials.get({publicKey:{challenge:rnd(32),timeout:60000,userVerification:"required",
-  allowCredentials:[{type:"public-key",id:unb64(credId)}]}});
-}
-
 /* ---------- registration ---------- */
-let rFace=null,rCred=null;
+let rFace=null;
 $("rcam").onclick=async()=>{
  const v=$("rv");
  if(!stream&&!(await startCam(v)))return msg($("rm"),"Camera blocked. Allow camera access and use HTTPS.","er");
@@ -135,50 +140,61 @@ $("rcam").onclick=async()=>{
  await new Promise(r=>setTimeout(r,2000));
  try{rFace=await faceVec(v);msg($("rm"),"✓ Face captured.","ok");stopCam();v.classList.add("hide")}catch(e){msg($("rm"),e.message,"er")}
 };
-$("rfp").onclick=async()=>{
- const id=$("ri").value.trim(),n=$("rn").value.trim();
- if(!id||!n)return msg($("rm"),"Enter name and Voter ID first.","er");
- try{rCred=await enrollFP(id,n);msg($("rm"),"✓ Fingerprint registered.","ok")}
- catch(e){msg($("rm"),"Fingerprint failed: "+(e.name||e.message)+". Make sure a fingerprint is set on this phone and the page is HTTPS.","er")}
-};
 $("rsave").onclick=async()=>{
- const id=$("ri").value.trim(),n=$("rn").value.trim();
- if(!id||!n||!rFace||!rCred)return msg($("rm"),"Complete name, ID, face and fingerprint.","er");
+ const id=$("ri").value.trim(),n=$("rn").value.trim(),pin=$("rpin").value.trim();
+ if(!id||!n||!rFace)return msg($("rm"),"Complete name, ID and face capture.","er");
+ if(!/^\d{4,6}$/.test(pin))return msg($("rm"),"PIN must be 4–6 digits.","er");
  const h=await sha(id);
  if(mem.voters[h])return msg($("rm"),"This Voter ID is already registered.","er");
- mem.voters[h]={name:n,face:rFace,cred:rCred};store.save();
- rFace=rCred=null;$("rn").value=$("ri").value="";msg($("rm"),"✅ Registered. You can now vote.","ok");
+ for(const k in mem.voters)if(cos(rFace,mem.voters[k].face)>0.93){logE("Duplicate face blocked at registration");return msg($("rm"),"This face is already registered under another Voter ID.","er")}
+ mem.voters[h]={name:n,face:rFace,pin:await sha(h+pin),ok:false,fails:0};store.save();
+ rFace=null;$("rn").value=$("ri").value=$("rpin").value="";
+ msg($("rm"),"✅ Registered. Show your ID to the election officer to get approved before voting.","ok");
 };
 
 /* ---------- voting ---------- */
-let vh=null,vsel=null;
-const step=n=>{[1,2,3,4].forEach(i=>$("v"+i).classList.toggle("hide",i!==n));
- ["p1","p2","p3"].forEach((p,i)=>$(p).className=i+1<n?"d":i+1===n?"c":"")};
+let vh=null,vsel=null,tmr=null;
+const step=n=>{[1,2,4].forEach(i=>$("v"+i).classList.toggle("hide",i!==n));
+ ["p1","p2"].forEach((p,i)=>$(p).className=i+1<n?"d":i+1===n?"c":"")};
+const M=(t,k)=>msg($("vm"),t,k);
+async function fail(why){const v=mem.voters[vh];v.fails=(v.fails||0)+1;logE(why+" – "+v.name);if(v.fails>=3&&!v.locked){v.locked=true;logE("LOCKED: "+v.name)}store.save();return v.locked}
 $("vgo").onclick=async()=>{
- const id=$("vi").value.trim();if(!id)return;
- vh=await sha(id);
- if(!mem.voters[vh])return msg($("vm"),"Voter ID not registered.","er");
- if(mem.voted.includes(vh))return msg($("vm"),"This voter has already voted.","er");
- step(2);msg($("vm"),"Position your face in the frame.");
- if(!(await startCam($("vv"))))msg($("vm"),"Camera blocked. Allow access.","er");
+ const id=$("vi").value.trim(),pin=$("vpin").value.trim();
+ if(!id||!pin)return M("Enter Voter ID and PIN.","er");
+ if(!mem.open)return M("Voting is not open right now.","er");
+ vh=await sha(id);const v=mem.voters[vh];
+ if(!v)return M("Voter ID not registered.","er");
+ if(!v.ok)return M("Your registration is not approved by the officer yet.","er");
+ if(mem.voted.includes(vh))return M("This voter has already voted.","er");
+ if(v.locked)return M("Account locked after failed attempts. Contact the election officer.","er");
+ if(v.pin!==await sha(vh+pin)){const l=await fail("Wrong PIN");return M(l?"Too many failed attempts. Account locked.":"Wrong PIN. "+(3-v.fails)+" tries left.","er")}
+ step(2);M("Stay in the frame, then start the live face check.");
+ if(!(await startCam($("vv"))))M("Camera blocked. Allow access.","er");
 };
 $("vface").onclick=async()=>{
- try{const f=await faceVec($("vv")),s=cos(f,mem.voters[vh].face);
-  if(s<0.8)return msg($("vm"),"Face did not match ("+Math.round(s*100)+"%). Try again in similar lighting.","er");
-  stopCam();step(3);msg($("vm"),"Face matched ("+Math.round(s*100)+"%). Now scan fingerprint.","ok")}
- catch(e){msg($("vm"),e.message,"er")}
-};
-$("vfp").onclick=async()=>{
- try{await checkFP(mem.voters[vh].cred);step(4);msg($("vm"),"Identity verified. Choose your candidate.","ok");drawCands()}
- catch(e){msg($("vm"),"Fingerprint not verified ("+(e.name||"error")+").","er")}
+ const v=mem.voters[vh],ch=["Turn your head slightly left","Turn your head slightly right","Move slightly closer, then back","Tilt your head a little"],q=ch[Math.floor(Math.random()*4)];
+ $("vface").disabled=true;
+ try{
+  const fr=[];
+  for(let i=0;i<4;i++){M(q+"… ("+(i+1)+"/4)");await new Promise(r=>setTimeout(r,900));fr.push(await faceVec($("vv")))}
+  const sims=fr.map(f=>cos(f,v.face)),min=Math.min(...sims),avg=sims.reduce((a,b)=>a+b)/4;
+  let mv=0;for(let i=1;i<4;i++)mv=Math.max(mv,1-cos(fr[0],fr[i]));
+  let why=null;
+  if(mv<0.002)why="Liveness check failed";else if(min<0.75||avg<0.82)why="Face mismatch ("+Math.round(avg*100)+"%)";
+  if(why){const l=await fail(why);if(l){stopCam();step(1);return M("Verification failed. Account locked – contact the officer.","er")}
+   return M(why+". "+(3-v.fails)+" tries left. Try again in good light.","er")}
+  stopCam();step(4);drawCands();M("Identity verified. You have 90 seconds to vote.","ok");
+  clearTimeout(tmr);tmr=setTimeout(()=>{step(1);vh=null;vsel=null;M("Session expired. Start again.","er")},90000);
+ }catch(e){M(e.message,"er")}
+ $("vface").disabled=false;
 };
 function drawCands(){
- $("cl").innerHTML=CANDS.map((c,i)=>`<div class="cand" data-i="${i}"><div class="dot" style="background:${c.c}">${c.n[0]}</div><div><b>${c.n}</b><br><span class="note">${c.p}</span></div></div>`).join("");
+ $("cl").innerHTML=cands().length?cands().map(c=>`<div class="cand" data-i="${c.id}"><div class="dot" style="background:${COLORS[c.id%6]}">${c.n[0]}</div><div><b>${c.n}</b><br><span class="note">${c.p||""}</span></div></div>`).join(""):"<p class=note>No candidates added yet.</p>";
  document.querySelectorAll(".cand").forEach(el=>el.onclick=()=>{vsel=+el.dataset.i;
   document.querySelectorAll(".cand").forEach(x=>x.classList.toggle("sel",x===el));$("cast").disabled=false});
 }
 $("cast").onclick=async()=>{
- if(vsel===null||mem.voted.includes(vh))return;
+ if(vsel===null||!vh||mem.voted.includes(vh)||!mem.open)return;clearTimeout(tmr);
  const prev=mem.ledger.length?mem.ledger.at(-1).hash:"0",ts=Date.now(),idx=mem.ledger.length;
  const hash=await sha(idx+"|"+vsel+"|"+ts+"|"+prev);
  mem.ledger.push({i:idx,c:vsel,ts,prev,hash});mem.voted.push(vh);store.save();
@@ -188,8 +204,8 @@ $("cast").onclick=async()=>{
 
 /* ---------- audit ---------- */
 async function renderAudit(){
- const t=CANDS.map(()=>0);mem.ledger.forEach(b=>t[b.c]++);const tot=mem.ledger.length||1;
- $("tally").innerHTML=CANDS.map((c,i)=>`<div style="margin-top:10px"><b>${c.n}</b> <span class="note">${c.p} · ${t[i]} votes</span><div class="bar"><b style="width:${t[i]/tot*100}%;background:${c.c}"></b></div></div>`).join("");
+ const t={};mem.ledger.forEach(b=>t[b.c]=(t[b.c]||0)+1);const tot=mem.ledger.length||1;
+ $("tally").innerHTML=cands().map(c=>{const v=t[c.id]||0;return `<div style="margin-top:10px"><b>${c.n}</b> <span class="note">${c.p||""} · ${v} votes</span><div class="bar"><b style="width:${v/tot*100}%;background:${COLORS[c.id%6]}"></b></div></div>`}).join("")||"<p class=note>No candidates yet.</p>";
  $("tot").textContent=`${mem.ledger.length} votes · ${Object.keys(mem.voters).length} registered voters`;
  let ok=true,prev="0";
  for(const b of mem.ledger){if(b.prev!==prev||b.hash!==await sha(b.i+"|"+b.c+"|"+b.ts+"|"+b.prev)){ok=false;break}prev=b.hash}
@@ -197,4 +213,37 @@ async function renderAudit(){
  $("blocks").innerHTML=mem.ledger.slice(-5).reverse().map(b=>`<p class="note">#${b.i}<br><code>${b.hash}</code></p>`).join("");
 }
 $("reset").onclick=()=>{if(confirm("Delete all voters and votes?")){mem={voters:{},voted:[],ledger:[]};store.save();renderAudit()}};
+
+/* ---------- admin ---------- */
+function adminVoters(){
+ $("vtog").textContent=mem.open?"Close voting (currently OPEN)":"Open voting (currently CLOSED)";
+ const bs='class="btn g" style="width:auto;margin:0;padding:8px 12px"';
+ $("vlist").innerHTML=Object.entries(mem.voters).map(([k,v])=>{
+  const st=mem.voted.includes(k)?"Voted":v.locked?"Locked":v.ok?"Approved":"Pending approval";
+  const b=!v.ok?`<button ${bs} data-a="${k}">Approve</button>`:v.locked?`<button ${bs} data-u="${k}">Unlock</button>`:"";
+  return `<div class="cand" style="cursor:default"><div style="flex:1"><b>${esc(v.name)}</b><br><span class="note">${st}</span></div>${b}</div>`}).join("")||"<p class=note>No voters yet.</p>";
+ document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{mem.voters[b.dataset.a].ok=true;logE("Approved "+mem.voters[b.dataset.a].name);adminVoters()});
+ document.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const v=mem.voters[b.dataset.u];v.locked=false;v.fails=0;logE("Unlocked "+v.name);adminVoters()});
+ $("slog").innerHTML=mem.log.slice(-8).reverse().map(l=>`<p class="note">${new Date(l.t).toLocaleTimeString()} · ${esc(l.m)}</p>`).join("")||"<p class=note>No events.</p>";
+}
+$("vtog").onclick=()=>{mem.open=!mem.open;logE(mem.open?"Voting opened":"Voting closed");adminVoters()};
+function adminUI(){
+ const locked=mem.ledger.length>0;
+ $("clist").innerHTML=cands().map(c=>`<div class="cand"><div class="dot" style="background:${COLORS[c.id%6]}">${c.n[0]}</div><div style="flex:1"><b>${c.n}</b><br><span class="note">${c.p||""}</span></div>${locked?"":`<button class="btn g" style="width:auto;margin:0;padding:8px 12px" data-d="${c.id}">Remove</button>`}</div>`).join("")||"<p class=note>No candidates yet.</p>";
+ document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{mem.cands=mem.cands.filter(c=>c.id!=b.dataset.d);store.save();adminUI()});
+ $("cadd").disabled=locked;adminVoters();
+ if(locked)msg($("am"),"Voting has started: candidate list is locked.");
+}
+if(!mem.pin)$("apl").textContent="Create an admin PIN (4+ digits)";
+$("ago").onclick=async()=>{
+ const v=$("apin").value.trim();if(v.length<4)return msg($("am"),"PIN must be at least 4 digits.","er");
+ const h=await sha("pin"+v);
+ if(!mem.pin){mem.pin=h;store.save()}else if(mem.pin!==h)return msg($("am"),"Wrong PIN.","er");
+ $("alog").classList.add("hide");$("apanel").classList.remove("hide");adminUI();
+};
+$("cadd").onclick=()=>{
+ const n=$("cn").value.trim();if(!n)return msg($("am"),"Enter candidate name.","er");
+ mem.cands.push({id:mem.nid++,n,p:$("cp").value.trim()});store.save();
+ $("cn").value=$("cp").value="";msg($("am"),"Candidate added.","ok");adminUI();
+};
 </script></body></html>
