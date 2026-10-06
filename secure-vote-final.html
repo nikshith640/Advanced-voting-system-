@@ -590,7 +590,7 @@ function renderResults(){
  const turn=appr.length?Math.round(votedAppr/appr.length*100)+"%":"None";
  $("res-body").innerHTML=`<div class="stats"><div><b>${recs.length}</b>Registered</div><div><b>${pend}</b>Pending</div><div><b>${tot}</b>Votes cast</div><div><b>${turn}</b>Turnout</div></div>`
  +CANDS.map((c,i)=>`<div class="res"><div class="top"><span><b>${esc(c.n)}</b><small>${esc(c.p)}</small>${tot&&t[i]===max&&t.filter(x=>x===max).length===1?'<span class="badge approved">Leading</span>':""}</span><span class="n"><b>${t[i]}</b> ${tot?(t[i]/tot*100).toFixed(1):"0.0"}%</span></div><div class="meter"><i style="width:${tot?t[i]/tot*100:0}%;background:${c.c}"></i></div></div>`).join("");
-}
+} 
 
 async function renderVoters(){
  const q=$("vq").value.trim().toLowerCase(),qk=q.length>=4?await vkey(q):null;
