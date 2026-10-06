@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SecureVote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap">
+<style>
+:root{--bg:#e9ebef;--surface:#fff;--ink:#16171c;--mute:#5d6370;--line:#cdd2da;--accent:#2e2a73;--on:#fff;--ok:#1b6b3a;--bad:#b0281c;--on-bad:#fff;--warn:#8a5a00;--field:#fff;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101218;--surface:#181b23;--ink:#eceef3;--mute:#9aa1b0;--line:#2d323d;--accent:#a9a5ff;--on:#13122e;--ok:#6fcf97;--bad:#ff8f84;--on-bad:#2a0b08;--warn:#e3b45a;--field:#101218}}
+:root[data-theme="dark"]{--bg:#101218;--surface:#181b23;--ink:#eceef3;--mute:#9aa1b0;--line:#2d323d;--accent:#a9a5ff;--on:#13122e;--ok:#6fcf97;--bad:#ff8f84;--on-bad:#2a0b08;--warn:#e3b45a;--field:#101218}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;border-top:4px solid var(--accent)}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 40px}
+.hide{display:none!important}
+header{padding:22px 0 6px}
+h1{font-size:1.5rem;font-weight:700;letter-spacing:-.01em;margin:0}
+header p{margin:2px 0 0;color:var(--mute);font-size:.92rem}
+h2{font-size:1.2rem;font-weight:700;margin:0 0 4px}
+h3{font-size:1rem;font-weight:700;margin:22px 0 4px}
+.lead{color:var(--mute);margin:0;font-size:.94rem}
+nav{display:flex;border-bottom:1px solid var(--line);margin-top:14px}
+nav button{appearance:none;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:12px 2px;margin-right:24px;font:600 .98rem inherit;font-family:inherit;color:var(--mute);cursor:pointer}
+nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
+nav button.right{margin-left:auto;margin-right:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;margin-top:18px}
+.warn{margin-top:14px;padding:10px 12px;border-left:3px solid var(--warn);background:var(--surface);font-size:.9rem}
+label{display:block;font-size:.88rem;font-weight:600;margin:16px 0 5px}
+input{width:100%;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink);font:inherit}
+input[type=search]{margin-top:14px}
+.code{font-size:1.5rem;letter-spacing:.35em;text-align:center;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{appearance:none;border:1px solid var(--accent);background:var(--accent);color:var(--on);font:600 .95rem inherit;font-family:inherit;padding:11px 18px;min-height:44px;border-radius:6px;cursor:pointer}
+.btn.line{background:transparent;color:var(--accent)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:var(--on-bad)}
+.btn.dline{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.sm{min-height:34px;padding:5px 12px;font-size:.86rem}
+.btn.block{display:block;width:100%;margin-top:18px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;margin-top:18px}.row .btn{flex:1}
+.status{margin-top:16px;padding:10px 12px;border-left:3px solid var(--line);font-size:.92rem;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.status:empty{display:none}.status.ok{border-left-color:var(--ok)}.status.er{border-left-color:var(--bad)}
+.steps{list-style:none;display:flex;gap:6px;margin:16px 0 8px;padding:0;counter-reset:s}
+.steps li{flex:1;border-top:3px solid var(--line);padding-top:6px;font-size:.8rem;color:var(--mute);counter-increment:s}
+.steps li::before{content:counter(s) ". "}
+.steps li.done{border-top-color:var(--ok);color:var(--ink)}
+.steps li.cur{border-top-color:var(--accent);color:var(--ink);font-weight:600}
+.cam{position:relative;margin-top:16px}
+video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#15161a;border-radius:6px;transform:scaleX(-1)}
+.cam::after{content:"";position:absolute;inset:10% 27%;border:2px dashed rgba(255,255,255,.7);border-radius:50%;pointer-events:none}
+.hint{min-height:1.5em;margin:10px 0 0;font-weight:600;font-size:.95rem}
+.keybox{margin-top:14px;padding:14px;border:1px dashed var(--ink);border-radius:6px;font:600 1.05rem/1.4 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em;word-break:break-all;user-select:all}
+.sess{margin-top:14px;font-size:.88rem;color:var(--mute)}.sess b{color:var(--ink);font-variant-numeric:tabular-nums}
+.ballot{margin-top:16px;border:2px solid var(--ink);border-radius:4px;background:var(--surface)}
+.bh,.cand{display:grid;grid-template-columns:2.4rem 1fr 3.2rem;align-items:center}
+.bh{padding:7px 12px;font-size:.8rem;color:var(--mute);border-bottom:2px solid var(--ink)}
+.bh span:last-child{text-align:center}
+.cand{position:relative;padding:14px 12px;border-bottom:1px solid var(--line);border-left:6px solid var(--pc);cursor:pointer}
+.cand:last-child{border-bottom:0}
+.cand input{position:absolute;opacity:0;pointer-events:none}
+.cand .no{font-variant-numeric:tabular-nums;color:var(--mute)}
+.cand .nm b{display:block;font-size:1.05rem}.cand .nm span{font-size:.85rem;color:var(--mute)}
+.bubble{justify-self:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--ink);background:transparent;transition:background .12s,border-color .12s}
+.cand input:checked~.bubble{background:var(--accent);border-color:var(--accent)}
+.cand:has(input:checked){background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.cand input:focus-visible~.bubble{outline:2px solid var(--accent);outline-offset:3px}
+.pick{margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:6px}
+.pick b{font-size:1.1rem}
+.receipt{margin-top:14px;padding:14px;border:1px dashed var(--ink);border-radius:6px}
+.receipt code,.mono{font:.78rem/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;color:var(--mute)}
+.sub{display:flex;gap:20px;overflow-x:auto;border-bottom:1px solid var(--line);flex:1}
+.sub button{appearance:none;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 0;font:600 .93rem inherit;font-family:inherit;color:var(--mute);cursor:pointer;white-space:nowrap}
+.sub button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.atop{display:flex;gap:14px;align-items:flex-end;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:6px}
+.stats div{padding:10px 12px;border-right:1px solid var(--line);font-size:.8rem;color:var(--mute)}.stats div:last-child{border-right:0}
+.stats b{display:block;font-size:1.3rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.res{margin-top:16px}
+.res .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.res .top small{color:var(--mute);margin-left:6px}
+.res .n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.meter{height:8px;border-radius:2px;background:var(--line);margin-top:6px;overflow:hidden}.meter i{display:block;height:100%}
+.seg{display:flex;margin-top:12px;border:1px solid var(--line);border-radius:6px;overflow-x:auto}
+.seg button{appearance:none;flex:1;white-space:nowrap;background:none;border:0;border-right:1px solid var(--line);padding:8px 10px;font:600 .85rem inherit;font-family:inherit;color:var(--mute);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent);color:var(--on)}
+.vrow{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--line)}
+.vrow .meta{font-size:.84rem;color:var(--mute)}.vrow .alert{font-size:.84rem;color:var(--warn)}
+.vrow .acts{display:flex;gap:8px}
+.badge{display:inline-block;margin-left:8px;padding:0 7px;font-size:.76rem;font-weight:600;border:1px solid currentColor;border-radius:4px;vertical-align:1px}
+.badge.pending{color:var(--warn)}.badge.approved{color:var(--accent)}.badge.voted{color:var(--ok)}.badge.locked{color:var(--bad)}
+.empty{padding:22px 0;color:var(--mute);text-align:center}
+.log p{margin:0;padding:7px 0;border-bottom:1px solid var(--line);font-size:.88rem}.log p span{color:var(--mute);margin-right:8px}
+footer{margin-top:22px;font-size:.82rem;color:var(--mute)}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:20px;width:min(420px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h3{margin-top:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <h1>SecureVote</h1>
+ <p>One voter, one ballot.</p>
+</header>
+<nav aria-label="Sections">
+ <button class="on" data-t="reg">Register</button>
+ <button data-t="vote">Vote</button>
+ <button class="right" data-t="admin">Admin</button>
+</nav>
+<div id="warn" class="warn hide">Browser storage is unavailable, so registrations and votes will be lost when this page closes.</div>
+
+<main>
+<!-- REGISTER -->
+<section id="reg" class="panel">
+ <h2>Register to vote</h2>
+ <p class="lead">An election officer approves each registration before you can vote.</p>
+ <ol class="steps" id="rsteps"><li>Details</li><li>Authenticator</li><li>Face</li></ol>
+
+ <div id="r1">
+  <label for="rn">Full name</label><input id="rn" autocomplete="off">
+  <label for="ri">Voter ID</label><input id="ri" autocomplete="off" autocapitalize="characters">
+  <label for="rp">Choose a 6-digit PIN</label><input id="rp" type="password" inputmode="numeric" maxlength="6" autocomplete="off">
+  <label for="rp2">Confirm PIN</label><input id="rp2" type="password" inputmode="numeric" maxlength="6" autocomplete="off">
+  <button class="btn block" id="r1go">Continue</button>
+ </div>
+
+ <div id="r2" class="hide">
+  <p>Add SecureVote to an authenticator app on your phone (Google Authenticator, Microsoft Authenticator or Authy) with this key. Then enter the 6-digit code the app shows.</p>
+  <div class="keybox" id="rkey"></div>
+  <p class="lead" style="margin-top:8px"><a id="rlink" href="#" style="color:var(--accent)">Open in authenticator app</a></p>
+  <label for="rc">Code from the app</label><input id="rc" class="code" inputmode="numeric" maxlength="6" autocomplete="off">
+  <button class="btn block" id="r2go">Check code</button>
+ </div>
+
+ <div id="r3" class="hide">
+  <p>You will be asked to turn your head slowly left, then right, and then look straight at the camera. This confirms a real person is present.</p>
+  <div class="cam hide" id="rcam"><video id="rv" playsinline muted></video></div>
+  <p class="hint" id="rhint"></p>
+  <button class="btn block" id="r3go">Start face check</button>
+ </div>
+
+ <div id="r4" class="hide">
+  <p><b>Registration submitted.</b></p>
+  <p class="lead">Show your Voter ID to an election officer. You can vote once your registration is approved.</p>
+  <button class="btn line block" id="r4new">Register another voter</button>
+ </div>
+ <div class="status" id="rm" role="status"></div>
+</section>
+
+<!-- VOTE -->
+<section id="vote" class="panel hide">
+ <h2>Cast your vote</h2>
+ <p class="lead">You will confirm your PIN, an authenticator code and your face before the ballot opens.</p>
+ <p class="sess hide" id="sess">Time left: <b id="sleft"></b></p>
+ <ol class="steps" id="vsteps"><li>Sign in</li><li>Code</li><li>Face</li><li>Ballot</li></ol>
+
+ <div id="v1">
+  <label for="vi">Voter ID</label><input id="vi" autocomplete="off" autocapitalize="characters">
+  <label for="vp">PIN</label><input id="vp" type="password" inputmode="numeric" maxlength="6" autocomplete="off">
+  <button class="btn block" id="v1go">Sign in</button>
+ </div>
+
+ <div id="v2" class="hide">
+  <label for="vc">Code from your authenticator app</label>
+  <input id="vc" class="code" inputmode="numeric" maxlength="6" autocomplete="off">
+  <button class="btn block" id="v2go">Check code</button>
+ </div>
+
+ <div id="v3" class="hide">
+  <div class="cam" id="vcam"><video id="vv" playsinline muted></video></div>
+  <p class="hint" id="vhint">Position your face inside the outline.</p>
+  <button class="btn block" id="v3go">Start face check</button>
+ </div>
+
+ <div id="v4" class="hide">
+  <div id="vb">
+   <p style="margin:0">Mark one candidate, then review your choice.</p>
+   <div class="ballot"><div class="bh"><span>No.</span><span>Candidate and party</span><span>Mark</span></div><div id="cl"></div></div>
+   <button class="btn block" id="review" disabled>Review choice</button>
+  </div>
+  <div id="vconf" class="hide">
+   <div class="pick">You are voting for<br><b id="pickname"></b><br><span class="lead" id="pickparty"></span></div>
+   <p class="lead" style="margin-top:12px">Your vote cannot be changed after you confirm.</p>
+   <div class="row"><button class="btn line" id="vback">Change choice</button><button class="btn" id="vcast">Confirm vote</button></div>
+  </div>
+ </div>
+
+ <div id="v5" class="hide">
+  <p><b>Your vote has been recorded.</b></p>
+  <p class="lead">Your ballot is stored without your name. Keep this receipt if you want an officer to confirm later that your ballot is in the count.</p>
+  <div class="receipt"><code id="rcpt"></code></div>
+  <button class="btn line block" id="vdone">Finish</button>
+ </div>
+ <div class="status" id="vm" role="status"></div>
+</section>
+
+<!-- ADMIN -->
+<section id="admin" class="panel hide">
+ <div id="a-setup" class="hide">
+  <h2>Set up admin access</h2>
+  <p class="lead">Create the election officer's passcode. Results, voter records and removals are available only after signing in.</p>
+  <label for="ap1">Passcode (at least 8 characters)</label><input id="ap1" type="password" autocomplete="new-password">
+  <label for="ap2">Confirm passcode</label><input id="ap2" type="password" autocomplete="new-password">
+  <button class="btn block" id="asetup">Create passcode</button>
+ </div>
+
+ <div id="a-login" class="hide">
+  <h2>Admin sign-in</h2>
+  <p class="lead">Results and voter records are visible to the election officer only.</p>
+  <label for="apw">Passcode</label><input id="apw" type="password" autocomplete="current-password">
+  <button class="btn block" id="alogin">Sign in</button>
+ </div>
+
+ <div id="a-dash" class="hide">
+  <div class="atop">
+   <div class="sub" id="subtabs"><button class="on" data-s="res">Results</button><button data-s="vot">Voters</button><button data-s="aud">Audit</button><button data-s="set">Settings</button></div>
+   <button class="btn line sm" id="aout">Sign out</button>
+  </div>
+
+  <div id="ap-res"><div id="res-body"></div></div>
+
+  <div id="ap-vot" class="hide">
+   <h2>Voters</h2>
+   <p class="lead">Approve new registrations, unlock voters, or remove anyone who should not vote.</p>
+   <input id="vq" type="search" placeholder="Search by name or Voter ID" autocomplete="off">
+   <div class="seg" id="seg"></div>
+   <div id="vlist"></div>
+  </div>
+
+  <div id="ap-aud" class="hide"><div id="aud-body"></div>
+   <h3>Check a receipt</h3>
+   <p class="lead">Paste the receipt a voter was given to confirm their ballot is in the ledger.</p>
+   <input id="rq" placeholder="Receipt code" autocomplete="off">
+   <button class="btn line block" id="rqgo">Check receipt</button>
+   <h3>Activity log</h3><div class="log" id="logs"></div>
+  </div>
+
+  <div id="ap-set" class="hide">
+   <h2>Settings</h2>
+   <h3>Change passcode</h3>
+   <label for="sp0">Current passcode</label><input id="sp0" type="password" autocomplete="current-password">
+   <label for="sp1">New passcode</label><input id="sp1" type="password" autocomplete="new-password">
+   <label for="sp2">Confirm new passcode</label><input id="sp2" type="password" autocomplete="new-password">
+   <button class="btn line block" id="spgo">Change passcode</button>
+   <h3>Election data</h3>
+   <p class="lead">Erase every voter, ballot and log entry to start a new election. Your admin passcode is kept.</p>
+   <button class="btn dline block" id="wipe">Erase election data</button>
+  </div>
+ </div>
+ <div class="status" id="am" role="status"></div>
+</section>
+</main>
+
+<footer>Voters are checked by Voter ID and PIN, an authenticator code and a live face check, and must be approved by an election officer. Three failed attempts lock a voter until an officer unlocks them. Ballots are stored with no link to the voter.</footer>
+</div>
+
+<dialog id="dlg">
+ <h3 id="dt"></h3><p class="lead" id="db"></p>
+ <label id="dpl" for="dpw" class="hide">Admin passcode</label><input id="dpw" type="password" class="hide" autocomplete="off">
+ <div class="status er" id="de"></div>
+ <div class="row"><button class="btn line" id="dno">Cancel</button><button class="btn" id="dok">Confirm</button></div>
+</dialog>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const hide=(id,h)=>$(id).classList.toggle("hide",!!h);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,"0")).join("");
+const msg=(el,t,k)=>{el.textContent=t||"";el.className="status "+(k||"")};
+const fmtDate=t=>new Date(t).toLocaleDateString(undefined,{day:"numeric",month:"short"});
+const fmtTime=t=>new Date(t).toLocaleString(undefined,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+
+const CANDS=[{n:"Aarav Sharma",p:"Unity Party",c:"#2f5bea"},{n:"Meera Iyer",p:"Progress Alliance",c:"#12a150"},{n:"Rohan Das",p:"People's Front",c:"#d97706"},{n:"NOTA",p:"None of the above",c:"#667085"}];
+const MAX_FAILS=3, SESSION_MS=240000, IDLE_MS=600000, LIVE_MIN=5, FACE_MATCH=0.8, FACE_DUP=0.9;
+
+/* ---------- storage ---------- */
+const KEY="securevote.v2";
+let mem=null,persistOK=true;
+const fresh=()=>({salt:b64(rnd(16)),voters:{},voted:[],ledger:[],admin:null,log:[]});
+const store={
+ load(){let r=null;try{r=localStorage.getItem(KEY)}catch(e){persistOK=false}
+  if(r){try{const m=JSON.parse(r);if(m&&m.voters&&m.ledger)mem=m}catch(e){}}
+  if(!mem)mem=fresh()},
+ save(){mem.voted.sort();try{localStorage.setItem(KEY,JSON.stringify(mem));persistOK=true}catch(e){persistOK=false}
+  hide("warn",persistOK);return persistOK}
+};
+store.load();store.save();
+const logE=t=>{mem.log.unshift({t:Date.now(),m:t});if(mem.log.length>200)mem.log.length=200};
+const vkey=id=>sha(mem.salt+"|"+id.trim().toUpperCase().replace(/\s+/g,""));
+
+/* ---------- crypto helpers ---------- */
+async function kdf(secret,salt){
+ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),"PBKDF2",false,["deriveBits"]);
+ return b64(await crypto.subtle.deriveBits({name:"PBKDF2",salt:unb64(salt),iterations:150000,hash:"SHA-256"},k,256));
+}
+const B32="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+function b32enc(u){let bits=0,v=0,o="";for(const b of u){v=(v<<8)|b;bits+=8;while(bits>=5){o+=B32[(v>>>(bits-5))&31];bits-=5}v&=(1<<bits)-1}if(bits>0)o+=B32[(v<<(5-bits))&31];return o}
+function b32dec(s){let bits=0,v=0;const o=[];for(const ch of s.replace(/[\s=]/g,"").toUpperCase()){v=(v<<5)|B32.indexOf(ch);bits+=5;if(bits>=8){o.push((v>>>(bits-8))&255);bits-=8}v&=(1<<bits)-1}return new Uint8Array(o)}
+async function hotp(secret,counter){
+ const key=await crypto.subtle.importKey("raw",secret,{name:"HMAC",hash:"SHA-1"},false,["sign"]);
+ const buf=new ArrayBuffer(8);new DataView(buf).setUint32(4,counter);
+ const h=new Uint8Array(await crypto.subtle.sign("HMAC",key,buf));
+ const o=h[19]&15,n=((h[o]&127)<<24)|(h[o+1]<<16)|(h[o+2]<<8)|h[o+3];
+ return String(n%1000000).padStart(6,"0");
+}
+/* returns the matched time step, or null. A step can be used only once (replay protection). */
+async function checkTotp(secretB32,code,lastStep){
+ const now=Math.floor(Date.now()/30000),sec=b32dec(secretB32);
+ for(const d of [0,-1,1]){const s=now+d;if(s<=lastStep)continue;if(await hotp(sec,s)===code)return s}
+ return null;
+}
+
+/* ---------- camera, liveness, face ---------- */
+let stream=null;
+async function startCam(v){
+ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:640,height:480}});
+  v.srcObject=stream;await v.play();v.parentElement.classList.remove("hide");return true}
+ catch(e){return false}
+}
+function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+ document.querySelectorAll("video").forEach(v=>{v.srcObject=null});
+ hide("rcam",true)}
+function grab(v,n){
+ const c=document.createElement("canvas");c.width=c.height=n;
+ const x=c.getContext("2d",{willReadFrequently:true}),s=Math.min(v.videoWidth,v.videoHeight);
+ x.drawImage(v,(v.videoWidth-s)/2,(v.videoHeight-s)/2,s,s,0,0,n,n);
+ const d=x.getImageData(0,0,n,n).data,g=new Float32Array(n*n);
+ for(let i=0;i<g.length;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+ return g;
+}
+async function faceVec(v){
+ if("FaceDetector" in window){let f=null;try{f=await new FaceDetector({fastMode:true}).detect(v)}catch(e){}
+  if(f&&!f.length)throw new Error("No face detected. Face the camera in good light.")}
+ const g=grab(v,24);let m=0;for(const a of g)m+=a;m/=g.length;
+ const z=Array.from(g,a=>a-m),n=Math.hypot(...z)||1;
+ if(n/Math.sqrt(z.length)<8)throw new Error("The image is too dark, or the camera is covered.");
+ return z.map(a=>+(a/n).toFixed(4));
+}
+const cos=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
+/* Liveness: the person must turn their head, which a held-up photo cannot do. Then a straight-on capture is taken. */
+async function faceCheck(v,hint){
+ hint.textContent="Turn your head slowly left, then right.";
+ const fr=[],t0=performance.now();
+ while(performance.now()-t0<3200){fr.push(grab(v,24));await sleep(150)}
+ let mx=0;
+ for(let i=0;i<fr.length;i++)for(let j=i+1;j<fr.length;j++){let s=0;for(let k=0;k<fr[i].length;k++)s+=Math.abs(fr[i][k]-fr[j][k]);mx=Math.max(mx,s/fr[i].length)}
+ if(mx<LIVE_MIN){hint.textContent="";throw new Error("No head movement was detected. Try again and turn your head slowly.")}
+ hint.textContent="Now look straight at the camera and hold still.";
+ await sleep(1600);
+ const f=await faceVec(v);hint.textContent="";return f;
+}
+
+/* ---------- tabs ---------- */
+let tab="reg";
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+ const t=b.dataset.t;if(t===tab)return;
+ if(tab==="admin")adminOut();
+ if(tab==="vote")endSession("");
+ stopCam();tab=t;
+ document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
+ ["reg","vote","admin"].forEach(id=>hide(id,id!==t));
+ if(t==="admin")adminRoute();
+});
+const setSteps=(ol,n)=>[...ol.children].forEach((li,i)=>li.className=i+1<n?"done":i+1===n?"cur":"");
+function enter(ids,btn){ids.forEach(i=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$(btn).click()}}))}
+const weakPin=p=>/^(\d)\1{5}$/.test(p)||"0123456789".includes(p)||"9876543210".includes(p);
+const digitsOnly=id=>$(id).addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"")});
+["rp","rp2","rc","vp","vc"].forEach(digitsOnly);
+
+/* ---------- registration ---------- */
+let RD=null;
+const rShow=n=>{[1,2,3,4].forEach(i=>hide("r"+i,i!==n));setSteps($("rsteps"),n)};
+$("r1go").onclick=async()=>{
+ const m=$("rm"),b=$("r1go");
+ const name=$("rn").value.trim().replace(/\s+/g," "),id=$("ri").value.trim(),p=$("rp").value,p2=$("rp2").value;
+ if(name.length<2)return msg(m,"Enter your full name.","er");
+ if(!/^[A-Za-z0-9\-\/]{4,20}$/.test(id))return msg(m,"Voter ID must be 4 to 20 letters, digits, hyphens or slashes.","er");
+ if(!/^\d{6}$/.test(p))return msg(m,"The PIN must be exactly 6 digits.","er");
+ if(weakPin(p))return msg(m,"Choose a PIN that is not a repeated or sequential number.","er");
+ if(p!==p2)return msg(m,"The two PINs do not match.","er");
+ b.disabled=true;
+ try{
+  store.load();const k=await vkey(id);
+  if(mem.voted.includes(k))return msg(m,"This Voter ID has already been used to vote.","er");
+  if(mem.voters[k])return msg(m,"This Voter ID is already registered.","er");
+  const salt=b64(rnd(16)),secret=b32enc(rnd(20));
+  RD={name,id:id.toUpperCase(),k,salt,pin:await kdf(p,salt),secret};
+  $("rkey").textContent=secret.match(/.{4}/g).join(" ");
+  $("rlink").href="otpauth://totp/SecureVote:"+encodeURIComponent(RD.id)+"?secret="+secret+"&issuer=SecureVote";
+  $("rp").value=$("rp2").value="";
+  msg(m,"");rShow(2);
+ }finally{b.disabled=false}
+};
+$("r2go").onclick=async()=>{
+ const m=$("rm"),c=$("rc").value;
+ if(!RD||!/^\d{6}$/.test(c))return msg(m,"Enter the 6-digit code shown in the app.","er");
+ const step=await checkTotp(RD.secret,c,0);
+ if(step===null)return msg(m,"That code is not correct. Check the key in your app and try the new code.","er");
+ RD.tc=step;$("rc").value="";msg(m,"Authenticator linked.","ok");rShow(3);
+};
+$("r3go").onclick=async()=>{
+ const m=$("rm"),b=$("r3go"),v=$("rv");b.disabled=true;
+ try{
+  if(!(await startCam(v)))throw new Error("The camera is blocked. Allow camera access (the page must use HTTPS) and try again.");
+  msg(m,"");$("rhint").textContent="Get ready.";await sleep(1200);
+  const face=await faceCheck(v,$("rhint"));
+  store.load();
+  if(mem.voters[RD.k]||mem.voted.includes(RD.k))throw new Error("This Voter ID was registered while you were completing the check.");
+  let dupOf=null,best=0;
+  for(const [k,r] of Object.entries(mem.voters)){const s=cos(face,r.face);if(s>=FACE_DUP&&s>best){best=s;dupOf=k}}
+  mem.voters[RD.k]={name:RD.name,hint:RD.id.slice(-3),salt:RD.salt,pin:RD.pin,totp:RD.secret,tc:RD.tc,face,status:"pending",fails:0,locked:false,dupOf,created:Date.now()};
+  logE("Registration submitted by "+RD.name+(dupOf?" (face resembles an existing voter)":""));
+  store.save();RD=null;stopCam();msg(m,"");rShow(4);
+ }catch(e){stopCam();$("rhint").textContent="";msg(m,e.message,"er")}
+ finally{b.disabled=false}
+};
+$("r4new").onclick=()=>{$("rn").value=$("ri").value="";msg($("rm"),"");rShow(1)};
+enter(["rn","ri","rp","rp2"],"r1go");enter(["rc"],"r2go");
+
+/* ---------- voting ---------- */
+let S=null,vSel=null;
+const vShow=n=>{[1,2,3,4,5].forEach(i=>hide("v"+i,i!==n));setSteps($("vsteps"),Math.min(n,4));hide("vsteps",n===5)};
+function closeSession(){if(S){clearInterval(S.tick);S=null}stopCam();hide("sess",true)}
+function endSession(text){
+ closeSession();vSel=null;
+ ["vi","vp","vc"].forEach(i=>$(i).value="");
+ $("vhint").textContent="Position your face inside the outline.";
+ hide("vb",false);hide("vconf",true);
+ vShow(1);msg($("vm"),text||"",text?"er":"");
+}
+function startSession(k){
+ S={k,end:Date.now()+SESSION_MS,tick:null};
+ const upd=()=>{const l=S.end-Date.now();if(l<=0)return endSession("Your session timed out. Please sign in again.");
+  $("sleft").textContent=Math.floor(l/60000)+":"+String(Math.floor(l/1000)%60).padStart(2,"0")};
+ S.tick=setInterval(upd,1000);upd();hide("sess",false);
+}
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&S)endSession("The session was cancelled because the page was left. Please sign in again.")});
+/* fetch the live voter record and make sure the session is still valid */
+function cur(){
+ if(!S)return null;store.load();
+ const r=mem.voters[S.k];
+ if(!r||r.status!=="approved"||r.locked||mem.voted.includes(S.k)){endSession("This session is no longer valid. Please speak to an election officer.");return null}
+ return r;
+}
+function strike(r,why){
+ r.fails=(r.fails||0)+1;
+ if(r.fails>=MAX_FAILS){r.locked=true;logE(r.name+" locked after "+MAX_FAILS+" failed attempts ("+why+")")}
+ else logE("Failed "+why+" for "+r.name);
+ store.save();
+ if(r.locked){endSession("Too many failed attempts. This voter is locked. Please see an election officer.");return true}
+ return false;
+}
+const left=r=>{const n=MAX_FAILS-r.fails;return n+(n===1?" attempt":" attempts")+" left."};
+
+$("v1go").onclick=async()=>{
+ const m=$("vm"),b=$("v1go"),id=$("vi").value.trim(),pin=$("vp").value;
+ if(!id||!/^\d{6}$/.test(pin))return msg(m,"Enter your Voter ID and 6-digit PIN.","er");
+ b.disabled=true;
+ try{
+  store.load();const k=await vkey(id),r=mem.voters[k];
+  const generic="The Voter ID or PIN is not correct, or this voter cannot vote right now.";
+  if(!r){await kdf(pin,mem.salt);await sleep(600);return msg(m,generic,"er")}
+  if(r.locked)return msg(m,"This voter is locked after repeated failed attempts. Please see an election officer.","er");
+  if((await kdf(pin,r.salt))!==r.pin){
+   if(strike(r,"PIN entry"))return;
+   return msg(m,generic+" "+left(r),"er");
+  }
+  if(mem.voted.includes(k))return msg(m,"This voter has already voted.","er");
+  if(r.status!=="approved")return msg(m,"This registration has not been approved yet. Please see an election officer.","er");
+  $("vp").value="";startSession(k);msg(m,"PIN accepted.","ok");vShow(2);$("vc").focus();
+ }finally{b.disabled=false}
+};
+$("v2go").onclick=async()=>{
+ const m=$("vm"),c=$("vc").value;
+ if(!/^\d{6}$/.test(c))return msg(m,"Enter the 6-digit code from your authenticator app.","er");
+ const r=cur();if(!r)return;
+ const step=await checkTotp(r.totp,c,r.tc||0);
+ if(step===null){if(strike(r,"authenticator code"))return;return msg(m,"That code is not correct or has already been used. Wait for a new code. "+left(r),"er")}
+ r.tc=step;store.save();$("vc").value="";
+ vShow(3);msg(m,"Code accepted.","ok");
+ if(!(await startCam($("vv"))))msg(m,"The camera is blocked. Allow camera access and try again.","er");
+};
+$("v3go").onclick=async()=>{
+ const m=$("vm"),b=$("v3go");
+ if(!stream&&!(await startCam($("vv"))))return msg(m,"The camera is blocked. Allow camera access and try again.","er");
+ b.disabled=true;
+ try{
+  msg(m,"");
+  let face;
+  try{face=await faceCheck($("vv"),$("vhint"))}
+  catch(e){$("vhint").textContent="Position your face inside the outline.";return msg(m,e.message,"er")}
+  const r=cur();if(!r)return;
+  const s=cos(face,r.face);
+  if(s<FACE_MATCH){$("vhint").textContent="Position your face inside the outline.";
+   if(strike(r,"face check"))return;
+   return msg(m,"Your face did not match ("+Math.round(s*100)+"%). Use similar lighting to registration. "+left(r),"er")}
+  r.fails=0;store.save();stopCam();
+  drawBallot();vShow(4);msg(m,"Identity confirmed. Choose your candidate.","ok");
+ }finally{b.disabled=false}
+};
+function drawBallot(){
+ $("cl").innerHTML=CANDS.map((c,i)=>`<label class="cand" style="--pc:${c.c}"><input type="radio" name="cand" value="${i}"><span class="no">${i+1}</span><span class="nm"><b>${esc(c.n)}</b><span>${esc(c.p)}</span></span><span class="bubble"></span></label>`).join("");
+ document.querySelectorAll("input[name=cand]").forEach(x=>x.onchange=()=>{vSel=+x.value;$("review").disabled=false});
+ vSel=null;$("review").disabled=true;hide("vb",false);hide("vconf",true);
+}
+$("review").onclick=()=>{if(vSel===null)return;$("pickname").textContent=CANDS[vSel].n;$("pickparty").textContent=CANDS[vSel].p;hide("vb",true);hide("vconf",false)};
+$("vback").onclick=()=>{hide("vb",false);hide("vconf",true)};
+$("vcast").onclick=async()=>{
+ const m=$("vm"),b=$("vcast");if(!S||vSel===null)return;b.disabled=true;
+ try{
+  const ts=Math.floor(Date.now()/60000)*60000;let hash=null;
+  for(let t=0;t<3&&!hash;t++){
+   if(!cur())return;
+   const idx=mem.ledger.length,prev=idx?mem.ledger[idx-1].hash:"0";
+   const h=await sha(idx+"|"+vSel+"|"+ts+"|"+prev);
+   store.load();
+   if(mem.ledger.length!==idx)continue;
+   if(!mem.voters[S.k]||mem.voted.includes(S.k))return endSession("This session is no longer valid. Please speak to an election officer.");
+   mem.ledger.push({i:idx,c:vSel,ts,prev,hash:h});mem.voted.push(S.k);store.save();hash=h;
+  }
+  if(!hash)return msg(m,"The vote could not be recorded. Please try again.","er");
+  closeSession();vSel=null;$("rcpt").textContent=hash;vShow(5);msg(m,"");
+ }finally{b.disabled=false}
+};
+$("vdone").onclick=()=>{endSession("");$("rcpt").textContent=""};
+enter(["vi","vp"],"v1go");enter(["vc"],"v2go");
+
+/* ---------- admin ---------- */
+let adminOK=false,idleT=null,vf="all";
+const adminCheck=async p=>!!mem.admin&&(await kdf(p,mem.admin.salt))===mem.admin.hash;
+function adminRoute(){
+ store.load();msg($("am"),"");
+ hide("a-setup",!!mem.admin||adminOK);hide("a-login",!mem.admin||adminOK);hide("a-dash",!adminOK);
+ if(adminOK)renderAdmin();
+}
+function adminOut(){
+ adminOK=false;clearTimeout(idleT);
+ ["res-body","vlist","aud-body","logs"].forEach(i=>$(i).innerHTML="");
+ ["apw","ap1","ap2","sp0","sp1","sp2","vq","rq"].forEach(i=>$(i).value="");
+}
+function touch(){if(!adminOK)return;clearTimeout(idleT);idleT=setTimeout(()=>{adminOut();adminRoute();msg($("am"),"You were signed out after 10 minutes of inactivity.")},IDLE_MS)}
+["click","keydown","input"].forEach(ev=>$("admin").addEventListener(ev,touch));
+function adminIn(){adminOK=true;touch();adminRoute();showSub("res")}
+
+$("asetup").onclick=async()=>{
+ const m=$("am"),p=$("ap1").value;
+ if(p.length<8)return msg(m,"The passcode must be at least 8 characters.","er");
+ if(p!==$("ap2").value)return msg(m,"The passcodes do not match.","er");
+ store.load();const salt=b64(rnd(16));
+ mem.admin={salt,hash:await kdf(p,salt),fails:0,strikes:0,until:0};
+ logE("Admin passcode created");store.save();adminIn();
+};
+$("alogin").onclick=async()=>{
+ store.load();const a=mem.admin,m=$("am");if(!a)return adminRoute();
+ const wait=a.until-Date.now();
+ if(wait>0)return msg(m,"Too many attempts. Try again in "+Math.ceil(wait/1000)+" seconds.","er");
+ if(!(await adminCheck($("apw").value))){
+  a.fails++;logE("Failed admin sign-in");
+  if(a.fails>=5){a.until=Date.now()+60000*2**Math.min(a.strikes,5);a.strikes++;a.fails=0;store.save();return msg(m,"Too many attempts. The sign-in is locked for a while.","er")}
+  store.save();return msg(m,"Incorrect passcode.","er");
+ }
+ a.fails=0;a.strikes=0;logE("Admin signed in");store.save();adminIn();
+};
+enter(["apw"],"alogin");enter(["ap1","ap2"],"asetup");
+$("aout").onclick=()=>{adminOut();adminRoute()};
+
+function showSub(s){
+ document.querySelectorAll("#subtabs button").forEach(b=>b.classList.toggle("on",b.dataset.s===s));
+ ["res","vot","aud","set"].forEach(x=>hide("ap-"+x,x!==s));msg($("am"),"");
+}
+document.querySelectorAll("#subtabs button").forEach(b=>b.onclick=()=>{showSub(b.dataset.s);renderAdmin()});
+const state=(k,r)=>mem.voted.includes(k)?"voted":r.locked?"locked":r.status==="approved"?"approved":"pending";
+const LABEL={pending:"Pending approval",approved:"Approved",voted:"Voted",locked:"Locked"};
+
+function renderAdmin(){store.load();renderResults();renderVoters();renderAudit()}
+
+function renderResults(){
+ const t=CANDS.map(()=>0);mem.ledger.forEach(b=>{if(t[b.c]!==undefined)t[b.c]++});
+ const tot=mem.ledger.length,max=Math.max(...t);
+ const recs=Object.entries(mem.voters),appr=recs.filter(([k,r])=>r.status==="approved");
+ const votedAppr=appr.filter(([k])=>mem.voted.includes(k)).length;
+ const pend=recs.filter(([k,r])=>r.status!=="approved").length;
+ const turn=appr.length?Math.round(votedAppr/appr.length*100)+"%":"None";
+ $("res-body").innerHTML=`<div class="stats"><div><b>${recs.length}</b>Registered</div><div><b>${pend}</b>Pending</div><div><b>${tot}</b>Votes cast</div><div><b>${turn}</b>Turnout</div></div>`
+ +CANDS.map((c,i)=>`<div class="res"><div class="top"><span><b>${esc(c.n)}</b><small>${esc(c.p)}</small>${tot&&t[i]===max&&t.filter(x=>x===max).length===1?'<span class="badge approved">Leading</span>':""}</span><span class="n"><b>${t[i]}</b> ${tot?(t[i]/tot*100).toFixed(1):"0.0"}%</span></div><div class="meter"><i style="width:${tot?t[i]/tot*100:0}%;background:${c.c}"></i></div></div>`).join("");
+}
+
+async function renderVoters(){
+ const q=$("vq").value.trim().toLowerCase(),qk=q.length>=4?await vkey(q):null;
+ const all=Object.entries(mem.voters).map(([k,r])=>({k,r,s:state(k,r)}));
+ const cnt=s=>s==="all"?all.length:all.filter(x=>x.s===s).length;
+ $("seg").innerHTML=[["all","All"],["pending","Pending"],["approved","Approved"],["voted","Voted"],["locked","Locked"]]
+  .map(([s,l])=>`<button data-f="${s}" class="${vf===s?"on":""}">${l} ${cnt(s)}</button>`).join("");
+ const ord={pending:0,locked:1,approved:2,voted:3};
+ const rows=all.filter(x=>(vf==="all"||x.s===vf)&&(!q||x.r.name.toLowerCase().includes(q)||x.r.hint.toLowerCase()===q||x.k===qk))
+  .sort((a,b)=>ord[a.s]-ord[b.s]||a.r.name.localeCompare(b.r.name));
+ if(!rows.length){$("vlist").innerHTML=`<div class="empty">${all.length?"No voters match this search.":"No one has registered yet."}</div>`;return}
+ $("vlist").innerHTML=rows.slice(0,100).map(({k,r,s})=>{
+  const other=r.dupOf&&mem.voters[r.dupOf];
+  const acts=(s==="pending"?`<button class="btn sm" data-a="approve" data-k="${k}">Approve</button>`:"")
+   +(s==="locked"?`<button class="btn sm" data-a="unlock" data-k="${k}">Unlock</button>`:"")
+   +`<button class="btn sm dline" data-a="remove" data-k="${k}">Remove</button>`;
+  return `<div class="vrow"><div><b>${esc(r.name)}</b><span class="badge ${s}">${LABEL[s]}</span><div class="meta">ID ending ${esc(r.hint)}, registered ${fmtDate(r.created)}</div>${other?`<div class="alert">Face closely resembles ${esc(other.name)}. Check ID documents before approving.</div>`:""}</div><div class="acts">${acts}</div></div>`}).join("")
+  +(rows.length>100?`<div class="empty">Showing 100 of ${rows.length}. Narrow the search to see more.</div>`:"");
+}
+$("vq").addEventListener("input",renderVoters);
+$("seg").addEventListener("click",e=>{const b=e.target.closest("button");if(b){vf=b.dataset.f;renderVoters()}});
+$("vlist").addEventListener("click",async e=>{
+ const b=e.target.closest("button[data-a]");if(!b)return;
+ store.load();const k=b.dataset.k,r=mem.voters[k];if(!r)return renderAdmin();
+ const a=b.dataset.a;
+ if(a==="approve"){
+  const other=r.dupOf&&mem.voters[r.dupOf];
+  if(other&&!(await ask({title:"Approve "+r.name+"?",body:"This person's face closely resembles "+other.name+". Approve only after checking their ID documents in person.",ok:"Approve anyway"})))return;
+  r.status="approved";logE("Approved "+r.name);
+ }else if(a==="unlock"){r.locked=false;r.fails=0;logE("Unlocked "+r.name)}
+ else if(a==="remove"){
+  const voted=mem.voted.includes(k);
+  const body=voted?"This voter has already voted. Their ballot stays in the count because ballots are anonymous, and this ID can never be used to vote again.":"This voter will be deleted and cannot vote. They can register again later.";
+  if(!(await ask({title:"Remove "+r.name+"?",body,ok:"Remove voter",danger:true})))return;
+  store.load();delete mem.voters[k];logE("Removed "+r.name+(voted?" (had already voted)":""));
+ }
+ store.save();renderAdmin();
+});
+
+async function renderAudit(){
+ let ok=true,prev="0",bad=-1,n=0;
+ for(const b of mem.ledger){if(b.i!==n||b.prev!==prev||b.hash!==await sha(b.i+"|"+b.c+"|"+b.ts+"|"+b.prev)){ok=false;bad=n;break}prev=b.hash;n++}
+ const sync=mem.ledger.length===mem.voted.length;
+ $("aud-body").innerHTML=`<h2>Audit</h2><div class="status ${ok?"ok":"er"}">${ok?"Ledger chain is intact. "+mem.ledger.length+" ballots verified.":"Tampering detected at ballot #"+bad+"."}</div>`
+  +`<div class="status ${sync?"ok":"er"}">${sync?"Ballot count matches the number of voters marked as voted.":"Mismatch: "+mem.ledger.length+" ballots recorded but "+mem.voted.length+" voters marked as voted."}</div>`;
+ $("logs").innerHTML=mem.log.length?mem.log.slice(0,60).map(l=>`<p><span>${fmtTime(l.t)}</span>${esc(l.m)}</p>`).join(""):`<div class="empty">No activity yet.</div>`;
+}
+$("rqgo").onclick=()=>{
+ const q=$("rq").value.trim().toLowerCase(),m=$("am");store.load();
+ if(!q)return msg(m,"Paste a receipt code first.","er");
+ const b=mem.ledger.find(x=>x.hash===q);
+ msg(m,b?"Receipt found. Ballot #"+b.i+" is in the ledger.":"No ballot matches this receipt.",b?"ok":"er");
+};
+
+$("spgo").onclick=async()=>{
+ const m=$("am"),n=$("sp1").value;store.load();
+ if(!(await adminCheck($("sp0").value)))return msg(m,"The current passcode is incorrect.","er");
+ if(n.length<8)return msg(m,"The new passcode must be at least 8 characters.","er");
+ if(n!==$("sp2").value)return msg(m,"The new passcodes do not match.","er");
+ const salt=b64(rnd(16));mem.admin.salt=salt;mem.admin.hash=await kdf(n,salt);logE("Admin passcode changed");store.save();
+ ["sp0","sp1","sp2"].forEach(i=>$(i).value="");msg(m,"Passcode changed.","ok");
+};
+$("wipe").onclick=async()=>{
+ if(!(await ask({title:"Erase all election data?",body:"Every voter, ballot and log entry will be deleted. This cannot be undone.",ok:"Erase everything",danger:true,pass:true})))return;
+ store.load();const a=mem.admin;mem=fresh();mem.admin=a;logE("Election data erased");store.save();renderAdmin();msg($("am"),"Election data erased.","ok");
+};
+
+/* ---------- confirm dialog ---------- */
+let dlgRes=null;
+$("dlg").addEventListener("close",()=>{if(dlgRes){const r=dlgRes;dlgRes=null;r(false)}});
+function ask({title,body,ok,danger,pass}){
+ return new Promise(res=>{
+  $("dt").textContent=title;$("db").textContent=body;$("de").textContent="";
+  $("dpw").value="";hide("dpw",!pass);hide("dpl",!pass);
+  $("dok").textContent=ok;$("dok").className="btn"+(danger?" danger":"");
+  dlgRes=res;
+  $("dno").onclick=()=>$("dlg").close();
+  $("dok").onclick=async()=>{
+   if(pass&&!(await adminCheck($("dpw").value))){msg($("de"),"Incorrect passcode.","er");return}
+   dlgRes=null;$("dlg").close();res(true);
+  };
+  $("dlg").showModal();
+ });
+}
+
+rShow(1);vShow(1);
+</script></body></html>
